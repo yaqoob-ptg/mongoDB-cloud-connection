@@ -1,4 +1,5 @@
 const User = require("../models/userModel");
+const mongoose=require('mongoose')
 
 // Create a new user
 exports.createUser=async (req,res)=>{
@@ -11,7 +12,7 @@ exports.createUser=async (req,res)=>{
         }
         const user=new User(req.body);
         await user.save();
-        res.status(201).json(user);
+        res.status(201).json({message:"User Created successfully!",User: user});
     
     }catch(e){
         res.status(500).json({errror:e.message});
@@ -33,6 +34,10 @@ exports.getAllUsers= async (req,res)=>{
 exports.getUserById= async (req,res)=>{
     try{
         const {id}=req.params;
+         // Check if the ID is a valid ObjectId
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ message: "Invalid user ID format" });
+        }
         const user=await User.findById(id);
         if(!user){
             return res.status(404).json({message:"User not found"});
@@ -45,8 +50,38 @@ exports.getUserById= async (req,res)=>{
 }
 
 exports.deleteUser= async (req,res)=>{
-   try{}
+   try{
+        const {id}=req.params;
+         // Check if the ID is a valid ObjectId
+        if (!mongoose.Types.ObjectId.isValid(id)) {
+            return res.status(400).json({ message: "Invalid user ID format" });
+        }
+        const result= await User.deleteOne({_id:id})
+        if(result.deletedCount===0){
+            return res.status(404).json({message:`User not found with the id:${id}`})
+        }
+        res.status(200).json({message:`User Deleted Successfully id:${id}`})
+   }
    catch(e){
     res.status(500).json({message:e.message});
    }  
 }  
+
+exports.updateUser=async (req,res)=>{
+    try{
+        const {id}=req.params;
+        if(!mongoose.Types.ObjectId.isValid(id)){
+            return res.status(400).json({message:"Invalid User ID format"})
+        }
+        const user =await User.findById(id)
+        if(!user){
+           return res.status(404).json({message:"user not found"})
+        }
+        const {name}=req.body;
+       if (name) user.name = name;
+        user.save()
+        res.status(200).json({message:`User updated`,user })
+    }catch(e){
+        res.status(500).json({message:e.message})
+    }
+}
